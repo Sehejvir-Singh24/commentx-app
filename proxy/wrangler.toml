@@ -1,0 +1,7 @@
+name = "commentx-proxy"
+main = "worker.js"
+compatibility_date = "2023-10-30"
+
+[vars]
+# Replace this with a secure token using `wrangler secret put AUTH_TOKEN` in production
+AUTH_TOKEN = "your-secret-token-here"
