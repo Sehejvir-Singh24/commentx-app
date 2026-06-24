@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CommentX Settings</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      width: 340px;
+      background: linear-gradient(160deg, #0a0a12 0%, #0f0f1a 40%, #121220 100%);
+      color: #e0e0e8;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 20px 22px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #00e676, #00bcd4);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+      color: #0a1f0f;
+      box-shadow: 0 4px 16px rgba(0,230,118,0.25);
+    }
+    .logo-text {
+      font-size: 20px; font-weight: 800;
+      background: linear-gradient(90deg, #e0e0e8, #a0a0b0);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    .version {
+      font-size: 10px; font-weight: 600;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      margin: 0 22px 16px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: #888;
+    }
+    .status-bar .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #555;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .status-bar .dot.ok { background: #00e676; box-shadow: 0 0 8px rgba(0,230,118,0.5); }
+    .status-bar .dot.warn { background: #ffab00; box-shadow: 0 0 8px rgba(255,171,0,0.4); }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+      margin: 0 22px 16px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      color: rgba(255,255,255,0.2);
+      padding: 0 22px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Form groups ── */
+    .form-content { padding: 0 22px; }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block; margin-bottom: 6px;
+      font-weight: 600; font-size: 12px; color: #a0a0b0;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="password"], select {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; color: #e0e0e8;
+      font-family: inherit; font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
+      border-color: rgba(0,230,118,0.4);
+      box-shadow: 0 0 0 3px rgba(0,230,118,0.08);
+    }
+    input::placeholder { color: rgba(255,255,255,0.15); }
+    select { cursor: pointer; }
+    select option { background: #16162a; color: #e0e0e8; }
+
+    /* ── Range slider ── */
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 6px; border-radius: 6px;
+      background: rgba(255,255,255,0.08);
+      outline: none; cursor: pointer;
+      margin-top: 4px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: linear-gradient(135deg, #00e676, #00c853);
+      box-shadow: 0 2px 8px rgba(0,230,118,0.35);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .vol-label {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .vol-value {
+      font-size: 11px; color: #00e676; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Hidden group ── */
+    .hidden { display: none; }
+
+    /* ── Save button ── */
+    .save-btn {
+      display: block; width: calc(100% - 44px); margin: 18px 22px 20px;
+      padding: 12px;
+      background: linear-gradient(135deg, #00c853, #00e676);
+      color: #0a1f0f; border: none; border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      letter-spacing: 0.3px;
+      box-shadow: 0 4px 20px rgba(0,200,83,0.3);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .save-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(0,200,83,0.4);
+    }
+    .save-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 12px rgba(0,200,83,0.25);
+    }
+    .save-btn.saved {
+      background: linear-gradient(135deg, #00e676, #69f0ae);
+    }
+
+    /* ── Key input with show/hide ── */
+    .key-input-wrap {
+      position: relative;
+    }
+    .key-input-wrap input {
+      padding-right: 40px;
+    }
+    .key-toggle {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: transparent; border: none; color: rgba(255,255,255,0.3);
+      cursor: pointer; font-size: 14px; padding: 4px;
+      transition: color 0.2s;
+    }
+    .key-toggle:hover { color: rgba(255,255,255,0.6); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">CX</div>
+      <span class="logo-text">CommentX</span>
+    </div>
+    <span class="version">v2.0</span>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">Checking API keys...</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Commentary settings -->
+  <div class="section-label">Commentary</div>
+  <div class="form-content">
+    <div class="form-group">
+      <label>Mode</label>
+      <select id="modeSelect">
+        <option value="sports">🏟️ Sports Commentator</option>
+        <option value="gaming">🎮 Gaming Streamer</option>
+        <option value="documentary">🎬 Documentary Narrator</option>
+        <option value="custom">✨ Custom Persona</option>
+      </select>
+    </div>
+
+    <div class="form-group hidden" id="customPromptGroup">
+      <label>Custom Persona Prompt</label>
+      <input type="text" id="customPrompt" placeholder="You are a sarcastic robot commentator...">
+    </div>
+
+    <div class="form-group">
+      <label class="vol-label">
+        <span>Volume</span>
+        <span class="vol-value" id="volDisplay">50%</span>
+      </label>
+      <input type="range" id="volumeSlider" min="0" max="100" value="50">
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- API Keys -->
+  <div class="section-label">API Keys</div>
+  <div class="form-content">
+    <div class="form-group">
+      <label>Groq API Key</label>
+      <div class="key-input-wrap">
+        <input type="password" id="groqApiKey" placeholder="gsk_...">
+        <button class="key-toggle" data-target="groqApiKey" title="Show/Hide">👁</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>ElevenLabs API Key <span style="color:rgba(255,255,255,0.15);font-weight:400">(optional)</span></label>
+      <div class="key-input-wrap">
+        <input type="password" id="elevenLabsApiKey" placeholder="sk_...">
+        <button class="key-toggle" data-target="elevenLabsApiKey" title="Show/Hide">👁</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Vision Model</label>
+      <input type="text" id="modelName" placeholder="meta-llama/llama-4-scout-17b-16e-instruct">
+    </div>
+  </div>
+
+  <button class="save-btn" id="saveBtn">Save Settings</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>

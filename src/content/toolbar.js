@@ -17,6 +17,10 @@ export function injectToolbar(videoEl, options, onToggle, onModeChange, onVolume
       padding: 8px 12px; border-radius: 8px; color: white;
       font-family: system-ui, -apple-system, sans-serif; font-size: 14px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .toolbar.hidden {
+      opacity: 0; pointer-events: none; transform: translateY(-8px);
     }
     button, select, input {
       background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
@@ -28,6 +32,49 @@ export function injectToolbar(videoEl, options, onToggle, onModeChange, onVolume
     .status-dot.error { background: #f44336; box-shadow: 0 0 5px #f44336; }
     .toggle { font-weight: bold; }
     .toggle.active { background: #4caf50; border-color: #4caf50; }
+
+    /* ── Close button ── */
+    .close-btn {
+      background: transparent !important;
+      border: none !important;
+      color: rgba(255,255,255,0.5) !important;
+      font-size: 16px !important;
+      padding: 0 4px !important;
+      line-height: 1;
+      margin-left: 4px;
+      transition: color 0.2s;
+    }
+    .close-btn:hover { color: #ff5555 !important; background: transparent !important; }
+
+    /* ── Restore pill ── */
+    .restore-pill {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2147483647;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 5px 10px;
+      color: rgba(255,255,255,0.7);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.85);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .restore-pill.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+    .restore-pill:hover { background: rgba(30,30,30,0.85); color: #fff; }
 
     .commentary-box {
       position: fixed;
@@ -91,7 +138,13 @@ export function injectToolbar(videoEl, options, onToggle, onModeChange, onVolume
   volInput.value = options?.volume || '50';
   volInput.style.width = '60px';
 
-  toolbar.append(statusDot, toggleBtn, modeSelect, volInput);
+  // ── Close button ──
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.title = 'Hide CommentX toolbar';
+  closeBtn.textContent = '✕';
+
+  toolbar.append(statusDot, toggleBtn, modeSelect, volInput, closeBtn);
 
   const commentaryBox = document.createElement('div');
   commentaryBox.className = 'commentary-box';
@@ -104,8 +157,27 @@ export function injectToolbar(videoEl, options, onToggle, onModeChange, onVolume
   container.style.position = 'fixed';
   container.style.top = '20px';
   container.style.right = '20px';
-  
+
+  // ── Restore pill (lives outside shadow DOM so it's always accessible) ──
+  const restorePill = document.createElement('button');
+  restorePill.id = 'commentx-restore-pill';
+  restorePill.title = 'Show CommentX toolbar';
+  restorePill.textContent = 'CX ▸';
+  restorePill.style.cssText = [
+    'position:fixed', 'top:20px', 'right:20px', 'z-index:2147483647',
+    'background:rgba(0,0,0,0.65)', 'backdrop-filter:blur(10px)',
+    'border:1px solid rgba(255,255,255,0.15)', 'border-radius:20px',
+    'padding:5px 10px', 'color:rgba(255,255,255,0.7)',
+    'font-family:system-ui,-apple-system,sans-serif', 'font-size:11px',
+    'font-weight:700', 'letter-spacing:1px', 'cursor:pointer',
+    'box-shadow:0 2px 8px rgba(0,0,0,0.4)',
+    'opacity:0', 'pointer-events:none',
+    'transform:scale(0.85)',
+    'transition:opacity 0.3s ease, transform 0.3s ease',
+  ].join(';');
+
   document.body.appendChild(container);
+  document.body.appendChild(restorePill);
 
   let isActive = false;
   
@@ -119,6 +191,24 @@ export function injectToolbar(videoEl, options, onToggle, onModeChange, onVolume
 
   modeSelect.addEventListener('change', (e) => onModeChange(e.target.value));
   volInput.addEventListener('input', (e) => onVolume(parseInt(e.target.value, 10)));
+
+  // ── Hide / Restore logic ──
+  function hideToolbar() {
+    toolbar.classList.add('hidden');
+    restorePill.style.opacity = '1';
+    restorePill.style.pointerEvents = 'auto';
+    restorePill.style.transform = 'scale(1)';
+  }
+
+  function showToolbar() {
+    toolbar.classList.remove('hidden');
+    restorePill.style.opacity = '0';
+    restorePill.style.pointerEvents = 'none';
+    restorePill.style.transform = 'scale(0.85)';
+  }
+
+  closeBtn.addEventListener('click', hideToolbar);
+  restorePill.addEventListener('click', showToolbar);
 
   const observer = new MutationObserver(() => {
     if (!document.contains(videoEl)) {
@@ -146,6 +236,7 @@ export function injectToolbar(videoEl, options, onToggle, onModeChange, onVolume
     },
     remove: () => {
       container.remove();
+      restorePill.remove();
       observer.disconnect();
     }
   };

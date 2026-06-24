@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "CommentX",
+  "version": "2.0.0",
+  "description": "Real-time AI commentary for any video — powered by Groq",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "src/content/videoDetector.js",
+        "src/content/frameCapture.js",
+        "src/content/commentaryEngine.js",
+        "src/content/ttsPlayer.js",
+        "src/content/toolbar.js",
+        "src/content/index.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html"
+  }
+}

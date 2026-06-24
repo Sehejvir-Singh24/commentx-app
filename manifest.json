@@ -25,7 +25,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/models/*"],
+      "resources": ["src/models/*", "wasm/*"],
       "matches": ["<all_urls>"]
     }
   ]

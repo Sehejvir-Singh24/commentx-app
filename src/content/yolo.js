@@ -14,7 +14,7 @@ const COCO_CLASSES = [
 
 let session = null;
 
-ort.env.wasm.wasmPaths = chrome.runtime.getURL('assets/');
+ort.env.wasm.wasmPaths = chrome.runtime.getURL('wasm/');
 
 export async function loadYolo() {
   if (session) return;

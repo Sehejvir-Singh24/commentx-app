@@ -40,72 +40,49 @@ async function handleCommentary(request, env, corsHeaders) {
 
     let systemPrompt = "";
     switch(mode) {
-      case "sports": systemPrompt = "You are an energetic sports commentator. Describe what you see in the provided image in 1-2 punchy sentences. Never repeat what you said before."; break;
-      case "gaming": systemPrompt = "You are a witty gaming streamer. React to what's on screen in 1 sentence. Keep energy high."; break;
-      case "documentary": systemPrompt = "You are David Attenborough. Narrate what you observe in the image in 1 calm, insightful sentence."; break;
-      case "custom": systemPrompt = customPrompt || "You are a helpful AI commentator."; break;
-      default: systemPrompt = "You are an AI commentator.";
+      case "sports": systemPrompt = "You are a hyped-up sports commentator. You MUST write exactly 1 to 2 full sentences describing the specific action happening in the image."; break;
+      case "gaming": systemPrompt = "You are a witty gaming streamer reacting to the screen. You MUST write exactly 1 full sentence reacting to the gameplay."; break;
+      case "documentary": systemPrompt = "You are David Attenborough. You MUST narrate the visual scene in 1 calm, insightful sentence."; break;
+      case "custom": systemPrompt = customPrompt || "You are a helpful AI commentator. Provide 1 full sentence."; break;
+      default: systemPrompt = "You are an AI commentator. Write a full sentence.";
     }
 
     const contextStr = Array.isArray(context) ? context.join(" | ") : "";
-    systemPrompt += `\nPrevious commentary (do not repeat these): [${contextStr}]`;
-
-    let detectionsText = "";
-    if (detections && detections.length > 0) {
-      const labels = detections.map(d => d.label).join(", ");
-      detectionsText = `\nDetected objects in frame: ${labels}`;
-    }
 
     const detectionDesc = (detections && detections.length > 0)
-      ? `Objects visible: ${detections.map(d => d.label).join(", ")}.`
-      : "No specific objects detected.";
+      ? `Hint: The AI object detector found these objects in the frame: ${detections.map(d => d.label).join(", ")}.`
+      : "";
 
-    const userPrompt = `You are watching a ${mode} video. ${detectionDesc}\n\nPrevious commentary (do not repeat): [${contextStr}]\n\nGive ONE short, punchy, natural commentary line (max 20 words) describing the action in the image. Be specific and energetic. Do not say 'I' or explain yourself.`;
+    const userPrompt = `${systemPrompt}\n\n${detectionDesc}\n\nBased on the detected objects, write an engaging, natural commentary line (between 5 and 20 words). DO NOT just output a single word. DO NOT repeat these previous lines: [${contextStr}]\n\nCommentary:`;
 
-    const geminiKey = env.GEMINI_API_KEY || "AIzaSyCwxdjn3cDaTyKrHRrieDf1OPz_u3fzUl4";
-    const parts = [
-      { text: systemPrompt + "\n\n" + userPrompt }
-    ];
-
-    if (frame) {
-      parts.push({
-        inline_data: {
-          mime_type: "image/jpeg",
-          data: frame
-        }
-      });
-    }
-
-    const geminiPayload = {
-      contents: [
-        {
-          role: "user",
-          parts: parts
-        }
-      ],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 60
-      }
+    const payload = {
+      model: "llama-3.3-70b-versatile",
+      temperature: 1.1,
+      max_tokens: 60,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
     };
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${env.GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(geminiPayload)
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), {
-        status: response.status, headers: { "Content-Type": "application/json", ...corsHeaders }
+      return new Response(JSON.stringify({ commentary: `Groq Error: ${response.status} - ${errorText.substring(0, 50)}...` }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
 
-    const geminiResult = await response.json();
-    const commentaryText = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const result = await response.json();
+    const commentaryText = result?.choices?.[0]?.message?.content || "";
 
     return new Response(JSON.stringify({ commentary: commentaryText.trim() }), {
       headers: { "Content-Type": "application/json", ...corsHeaders }
