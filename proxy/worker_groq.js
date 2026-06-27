@@ -49,42 +49,26 @@ async function handleCommentary(request, env, corsHeaders) {
 
     const contextStr = Array.isArray(context) ? context.join(" | ") : "";
 
-    const userPromptText = `Based on the image and the context, write an engaging, natural commentary line (between 5 and 20 words). DO NOT just output a single word. DO NOT repeat these previous lines: [${contextStr}]\n\nCommentary:`;
+    const detectionDesc = (detections && detections.length > 0)
+      ? `Hint: The AI object detector found these objects in the frame: ${detections.map(d => d.label).join(", ")}.`
+      : "";
+
+    const userPrompt = `${systemPrompt}\n\n${detectionDesc}\n\nBased on the detected objects, write an engaging, natural commentary line (between 5 and 20 words). DO NOT just output a single word. DO NOT repeat these previous lines: [${contextStr}]\n\nCommentary:`;
 
     const payload = {
-      system_instruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      contents: [
-        {
-          parts: [
-            { text: userPromptText }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 60
-      }
+      model: "llama-3.3-70b-versatile",
+      temperature: 1.1,
+      max_tokens: 60,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
     };
 
-    if (frame) {
-      // Send the actual image frame for Gemini's multimodal analysis
-      payload.contents[0].parts.push({
-        inline_data: {
-          mime_type: "image/jpeg",
-          data: frame
-        }
-      });
-    } else if (detections && detections.length > 0) {
-      // Fallback: If no frame is passed, use YOLO detections
-      const detectionDesc = `Hint: The AI object detector found these objects: ${detections.map(d => d.label).join(", ")}.`;
-      payload.contents[0].parts.push({ text: detectionDesc });
-    }
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${env.GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
@@ -92,13 +76,13 @@ async function handleCommentary(request, env, corsHeaders) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      return new Response(JSON.stringify({ commentary: `Gemini Error: ${response.status} - ${errorText.substring(0, 50)}...` }), {
+      return new Response(JSON.stringify({ commentary: `Groq Error: ${response.status} - ${errorText.substring(0, 50)}...` }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
 
     const result = await response.json();
-    const commentaryText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const commentaryText = result?.choices?.[0]?.message?.content || "";
 
     return new Response(JSON.stringify({ commentary: commentaryText.trim() }), {
       headers: { "Content-Type": "application/json", ...corsHeaders }

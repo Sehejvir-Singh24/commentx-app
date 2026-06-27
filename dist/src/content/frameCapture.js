@@ -7,8 +7,8 @@
   let offscreenCanvas = null;
   let offscreenCtx = null;
 
-  const MAX_WIDTH = 320;
-  const MAX_HEIGHT = 180;
+  const MAX_WIDTH = 640;
+  const MAX_HEIGHT = 360;
 
   function setupCanvas(videoEl) {
     if (!offscreenCanvas) {
@@ -39,7 +39,7 @@
     setupCanvas(videoEl);
     try {
       offscreenCtx.drawImage(videoEl, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-      const dataUri = offscreenCanvas.toDataURL('image/jpeg', 0.4);
+      const dataUri = offscreenCanvas.toDataURL('image/jpeg', 0.7);
       return dataUri.split(',')[1];
     } catch (error) {
       console.error("CommentX: Error capturing frame:", error);

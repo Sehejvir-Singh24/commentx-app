@@ -243,7 +243,7 @@
         if (hideTimeout) clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
           commentaryBox.classList.remove('visible');
-        }, 8000);
+        }, 5000);
       },
       remove: () => {
         container.remove();

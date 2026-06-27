@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CommentX - Gemini API Tester</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e8; padding: 40px; }
+    h1 { color: #00e676; }
+    input { width: 400px; padding: 10px; background: #16213e; color: #e0e0e8; border: 1px solid #0f3460; border-radius: 6px; font-size: 14px; }
+    button { padding: 10px 24px; background: #00e676; color: #0a1f0f; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-left: 10px; }
+    button:hover { background: #69f0ae; }
+    #results { margin-top: 20px; padding: 20px; background: #16213e; border-radius: 8px; white-space: pre-wrap; font-family: monospace; font-size: 13px; min-height: 100px; }
+    .success { color: #00e676; }
+    .error { color: #ff5252; }
+    .info { color: #42a5f5; }
+  </style>
+</head>
+<body>
+  <h1>🔧 CommentX Gemini API Tester</h1>
+  <p>Paste your <strong>new</strong> Gemini API key below and click Test.</p>
+  <div>
+    <input type="password" id="apiKey" placeholder="Paste your Gemini API key here...">
+    <button onclick="runTest()">Test API Key</button>
+  </div>
+  <div id="results">Waiting for test...</div>
+
+  <script>
+    async function runTest() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const results = document.getElementById('results');
+      if (!apiKey) { results.textContent = 'Please enter an API key!'; return; }
+
+      results.innerHTML = '<span class="info">Step 1: Listing available models...</span>\n';
+
+      // Step 1: List models
+      try {
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (!listRes.ok) {
+          const errText = await listRes.text();
+          results.innerHTML += `<span class="error">ERROR listing models (${listRes.status}): ${errText}</span>\n`;
+          results.innerHTML += `\n<span class="error">Your API key is invalid or revoked. Please generate a new one at https://aistudio.google.com/app/apikey</span>`;
+          return;
+        }
+        const listData = await listRes.json();
+        const visionModels = listData.models.filter(m =>
+          m.name.includes('gemini') &&
+          m.supportedGenerationMethods &&
+          m.supportedGenerationMethods.includes('generateContent')
+        );
+
+        results.innerHTML += `<span class="success">Found ${visionModels.length} Gemini models:</span>\n`;
+        visionModels.forEach(m => {
+          results.innerHTML += `  📦 ${m.name} (${m.displayName})\n`;
+        });
+
+        // Step 2: Try sending an image to the first flash model
+        const flashModel = visionModels.find(m => m.name.includes('flash'));
+        if (!flashModel) {
+          results.innerHTML += `\n<span class="error">No flash model found! Available models listed above.</span>`;
+          return;
+        }
+
+        const modelName = flashModel.name; // e.g. "models/gemini-2.0-flash"
+        results.innerHTML += `\n<span class="info">Step 2: Testing vision with ${modelName}...</span>\n`;
+
+        // Create a tiny 1x1 red JPEG for testing
+        const testPayload = {
+          contents: [{
+            parts: [
+              { text: "Describe this image in 5 words." },
+              { inlineData: { mimeType: "image/jpeg", data: "/9j/4AAQSkZJRgABAQEAAAAAAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=" } }
+            ]
+          }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 30 }
+        };
+
+        const genRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(testPayload)
+        });
+
+        if (!genRes.ok) {
+          const errText = await genRes.text();
+          results.innerHTML += `<span class="error">ERROR generating content (${genRes.status}): ${errText}</span>\n`;
+
+          // Try v1 instead
+          results.innerHTML += `\n<span class="info">Trying v1 endpoint instead of v1beta...</span>\n`;
+          const genRes2 = await fetch(`https://generativelanguage.googleapis.com/v1/${modelName}:generateContent?key=${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(testPayload)
+          });
+          if (!genRes2.ok) {
+            const errText2 = await genRes2.text();
+            results.innerHTML += `<span class="error">v1 also failed (${genRes2.status}): ${errText2}</span>\n`;
+          } else {
+            const genData2 = await genRes2.json();
+            results.innerHTML += `<span class="success">v1 WORKED! Response: ${JSON.stringify(genData2)}</span>\n`;
+            results.innerHTML += `\n<span class="success">✅ USE THIS IN YOUR EXTENSION:</span>\n`;
+            results.innerHTML += `<span class="success">Endpoint: v1</span>\n`;
+            results.innerHTML += `<span class="success">Model: ${modelName}</span>\n`;
+          }
+          return;
+        }
+
+        const genData = await genRes.json();
+        const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "(no text)";
+        results.innerHTML += `<span class="success">✅ SUCCESS! Gemini replied: "${text}"</span>\n`;
+        results.innerHTML += `\n<span class="success">========================================</span>\n`;
+        results.innerHTML += `<span class="success">WORKING MODEL: ${modelName}</span>\n`;
+        results.innerHTML += `<span class="success">WORKING ENDPOINT: v1beta</span>\n`;
+        results.innerHTML += `<span class="success">========================================</span>\n`;
+        results.innerHTML += `\n<span class="info">Copy the model name above and tell it to your AI assistant!</span>\n`;
+
+      } catch (e) {
+        results.innerHTML += `<span class="error">Network error: ${e.message}</span>\n`;
+      }
+    }
+  </script>
+</body>
+</html>

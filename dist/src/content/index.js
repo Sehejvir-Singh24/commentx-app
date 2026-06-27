@@ -96,7 +96,8 @@
 
         if (commentary) {
           toolbarApi.showCommentary(commentary);
-          await CX.speak(commentary, currentVideo);
+          // Fire-and-forget: don't await TTS so next frame isn't delayed
+          CX.speak(commentary, currentVideo);
         }
       } catch (e) {
         console.error("CommentX pipeline error:", e);
@@ -104,7 +105,7 @@
       } finally {
         isProcessing = false;
       }
-    }, 8000);
+    }, 5000);
   }
 
   function stopPipeline() {

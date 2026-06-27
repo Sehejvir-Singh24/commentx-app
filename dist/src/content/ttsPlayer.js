@@ -35,7 +35,7 @@
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.volume = currentVolume;
-      utterance.rate = 1.05;
+      utterance.rate = 1.35;
       utterance.pitch = 1.0;
 
       // Pick the best available English voice
